@@ -1,1 +1,51 @@
+public double[,] WeightInitialize(MemoryMode mm, string path)
+ {
+     char[] delim = new char[] { ';', ' ' };
+     string[] tmpStrWeights;
+     double[,] weights = new double[numofneurons, numofprevneurons + 1];
 
+
+     switch (mm)
+     {
+         case MemoryMode.GET:
+             tmpStrWeights = File.ReadAllLines(path);
+             string[] memory_elemnt;
+             for (int i = 0; i < numofneurons; i++)
+             {
+                 memory_elemnt = tmpStrWeights[i].Split(delim);
+                 for (int j = 0; j < numofprevneurons + 1; j++)
+                 {
+                     weights[i, j] = double.Parse(memory_elemnt[j].Replace(',', '.'),
+                         System.Globalization.CultureInfo.InvariantCulture);
+                 }
+             }
+             break;
+
+         case MemoryMode.SET:
+             tmpStrWeights = new string[numofneurons];
+             for (int i = 0; i < numofneurons; i++)
+             {
+                 string[] memory_elemnt_set = new string[numofprevneurons + 1];
+                 for (int j = 0; j < numofprevneurons + 1; j++)
+                 {
+                     memory_elemnt_set[j] = Neurons[i].Weights[j].ToString(System.Globalization.CultureInfo.InvariantCulture);
+                 }
+                 tmpStrWeights[i] = string.Join(";", memory_elemnt_set);
+             }
+             File.WriteAllLines(path, tmpStrWeights);
+             break;
+
+         case MemoryMode.INIT:
+             Random rand = new Random();
+             for (int i = 0; i < numofneurons; i++)
+             {
+                 for (int j = 0; j < numofprevneurons + 1; j++)
+                 {
+                     weights[i, j] = rand.NextDouble() - 0.5;
+                 }
+             }
+             break;
+     }
+
+     return weights;
+ } 
