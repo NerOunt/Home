@@ -1,1 +1,19 @@
-
+public void Shuffling_Array_Rows(double[,] arr)
+{
+    Random rand = new Random();
+    int rowCount = arr.GetLength(0);
+    int colCount = arr.GetLength(1);
+    
+    for (int i = rowCount - 1; i > 0; i--)
+    {
+        int j = rand.Next(i + 1);
+        
+        // Swap rows i and j
+        for (int k = 0; k < colCount; k++)
+        {
+            double temp = arr[i, k];
+            arr[i, k] = arr[j, k];
+            arr[j, k] = temp;
+        }
+    }
+}
