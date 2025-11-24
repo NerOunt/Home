@@ -114,4 +114,4 @@ namespace PI_31_2_KRAVCHENKO_VLADISLAV_AI.NeyroNet
 }
 
 
-// Архитектура: 15-71-33-10
+
