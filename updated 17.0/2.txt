@@ -11,22 +11,26 @@ public void Train(Network net)
     try
     {
         net.inputLayer = new InputLayer(NetworkMode.Train);
-        int epochs = 10;
-        Accuracy = new double[epochs];
-        e_error_avr = new double[epochs];
+        int epoches = 10;
+        Accuracy = new double[epoches];
+        double tmpSumError;
+        double[] errors;
+        double[] temp_gsums1;
+        double[] temp_gsums2;
+        e_error_avr = new double[epoches];
 
-        int totalSamples = net.inputLayer.Trainset.GetLength(0);
+        int totalTrainSamples = net.inputLayer.Trainset.GetLength(0);
 
-        for (int k = 0; k < epochs; k++)
+        for (int k = 0; k < epoches; k++)
         {
             e_error_avr[k] = 0;
-            int correctPredictions = 0; // <-- СЧЁТЧИК ПРАВИЛЬНЫХ ОТВЕТОВ
+            int correctPredictions = 0; // ← Счётчик правильных ответов
 
             net.inputLayer.Shuffling_Array_Rows(net.inputLayer.Trainset);
 
-            for (int i = 0; i < totalSamples; i++)
+            for (int i = 0; i < totalTrainSamples; i++)
             {
-                // Извлекаем входные признаки (15 значений)
+                // Извлекаем признаки (15 значений), пропуская метку (первый столбец)
                 double[] tmpTrain = new double[15];
                 for (int j = 0; j < tmpTrain.Length; j++)
                     tmpTrain[j] = net.inputLayer.Trainset[i, j + 1];
@@ -34,38 +38,39 @@ public void Train(Network net)
                 // Прямой проход
                 ForwardPass(net, tmpTrain);
 
-                // === РАСЧЁТ ОШИБКИ (MSE) ===
-                double tmpSumError = 0;
-                double[] errors = new double[net.fact.Length];
-                int trueClass = (int)net.inputLayer.Trainset[i, 0]; // истинный класс
+                // Вычисление ошибки (MSE)
+                tmpSumError = 0;
+                errors = new double[net.fact.Length];
+                int trueLabel = (int)net.inputLayer.Trainset[i, 0]; // ← Истинная метка
 
                 for (int x = 0; x < errors.Length; x++)
                 {
-                    if (x == trueClass)
+                    if (x == trueLabel)
                         errors[x] = 1.0 - net.fact[x];
                     else
                         errors[x] = -net.fact[x];
 
-                    tmpSumError += errors[x] * errors[x] / 2.0;
+                    tmpSumError += errors[x] * errors[x] / 2;
                 }
                 e_error_avr[k] += tmpSumError / errors.Length;
 
-                // === ПОДСЧЁТ ТОЧНОСТИ ===
-                int predictedClass = Array.IndexOf(net.fact, net.fact.Max());
-                if (predictedClass == trueClass)
+                // === НОВОЕ: Подсчёт точности ===
+                int predictedLabel = Array.IndexOf(net.Fact, net.Fact.Max());
+                if (predictedLabel == trueLabel)
                     correctPredictions++;
+                // =============================
 
                 // Обратное распространение
-                double[] temp_gsums2 = net.output_layer.BackwardPass(errors);
-                double[] temp_gsums1 = net.hidden_layer2.BackwardPass(temp_gsums2);
+                temp_gsums2 = net.output_layer.BackwardPass(errors);
+                temp_gsums1 = net.hidden_layer2.BackwardPass(temp_gsums2);
                 net.hidden_layer1.BackwardPass(temp_gsums1);
             }
 
-            // Усреднение ошибки по всем примерам
-            e_error_avr[k] /= totalSamples;
+            // Усреднение ошибки по всему датасету
+            e_error_avr[k] /= totalTrainSamples;
 
-            // === ПРАВИЛЬНЫЙ РАСЧЁТ ТОЧНОСТИ В ПРОЦЕНТАХ ===
-            Accuracy[k] = (double)correctPredictions / totalSamples * 100.0;
+            // ← ПРАВИЛЬНАЯ ТОЧНОСТЬ: доля верных предсказаний
+            Accuracy[k] = (double)correctPredictions / totalTrainSamples;
         }
     }
     finally
@@ -73,6 +78,18 @@ public void Train(Network net)
         hidden_layer1.SetDropoutTraining(originalUseDropout);
         hidden_layer2.SetDropoutTraining(originalUseDropout);
     }
+
+    // Освобождение ресурсов
+    net.inputLayer = null;
+
+    // Сохранение весов
+    string memoryDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "memory");
+    Directory.CreateDirectory(memoryDir); // На случай, если папки нет
+
+    net.hidden_layer1.WeightInitialize(MemoryMode.SET, Path.Combine(memoryDir, nameof(hidden_layer1) + "_memory.csv"));
+    net.hidden_layer2.WeightInitialize(MemoryMode.SET, Path.Combine(memoryDir, nameof(hidden_layer2) + "_memory.csv"));
+    net.output_layer.WeightInitialize(MemoryMode.SET, Path.Combine(memoryDir, nameof(output_layer) + "_memory.csv"));
+}
 
     net.inputLayer = null;
 
